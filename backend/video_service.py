@@ -60,3 +60,9 @@ def preprocess(face_img):
 
     return tensor.to(DEVICE)
 
+def predict(tensor):
+    with torch.no_grad():
+        output = model(tensor)
+        prob = torch.sigmoid(output).item()
+    return prob
+
