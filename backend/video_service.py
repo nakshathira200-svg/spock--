@@ -14,7 +14,7 @@ from model import load_model
 from utils import DEVICE
 
 
-model = load_model()
+model ,THRESHOLD= load_model()
 model.to(DEVICE)
 model.eval()
 
@@ -37,7 +37,11 @@ def extract_frames(video_path):
 
     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    return sorted([os.path.join(TEMP_DIR, f) for f in os.listdir(TEMP_DIR)])
+    frames= sorted([os.path.join(TEMP_DIR, f)
+                     for f in os.listdir(TEMP_DIR)
+                     if f.endswith(".jpg")
+                     ])
+    return frames
 
 mtcnn = MTCNN(keep_all=False, device=DEVICE)
 
@@ -56,7 +60,7 @@ def preprocess(face_img):
     face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
     face_img = face_img.astype(np.float32) / 255.0
 
-    tensor = torch.tensor(face_img).permute(2, 0, 1).unsqueeze(0)
+    tensor = torch.from_numpy(face_img).permute(2, 0, 1).unsqueeze(0)
 
     return tensor.to(DEVICE)
 
@@ -72,14 +76,16 @@ def aggregate_scores(scores):
 
 def generate_gradcam(tensor):
     try:
-        target_layers = [model.target_layer]  # last conv layer
+        original_device = next(model.parameters()).device
 
         if DEVICE.type == "mps":
            model_cpu = model.cpu()
+           target_layers = [model_cpu.target_layer]
            cam = GradCAM(model=model_cpu, target_layers=target_layers)
         else:
+          target_layers = [model.target_layer]
           cam = GradCAM(model=model, target_layers=target_layers)
-        targets = [ClassifierOutputTarget(1)]
+        targets = [ClassifierOutputTarget(0)]
 
         grayscale_cam = cam(input_tensor=tensor, targets=targets)[0]
 
@@ -89,6 +95,7 @@ def generate_gradcam(tensor):
         heatmap_path = os.path.join(TEMP_DIR, "heatmap.jpg")
         cv2.imwrite(heatmap_path, heatmap)
 
+        model.to(original_device)
         return heatmap_path
 
     except Exception as e:
@@ -127,13 +134,14 @@ def analyze_video(video_path):
         }
 
     final_score = 0.7 * max(scores) + 0.3 * (sum(scores) / len(scores))
+    margin=0.02
     result = {
         "type": "video",
         "video_score": final_score,
-        "status": "Likely Fake" if final_score > 0.7 else "Likely Real"
+        "status": "Likely Fake" if final_score > THRESHOLD + margin else ("Likely Real" if final_score < THRESHOLD - margin else "Suspicious")
     }
 
-    if final_score > 0.7 and last_tensor is not None:
+    if final_score > 0.8 and last_tensor is not None:
         heatmap_path = generate_gradcam(last_tensor)
         if heatmap_path:
             result["heatmap"] = heatmap_path

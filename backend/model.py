@@ -1,39 +1,46 @@
-
 import torch
 import torch.nn as nn
+import torchvision.models as models
 
-class SimpleCNN(nn.Module):
+class DeepfakeModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 16, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-
-            nn.Conv2d(16, 32, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-
-            nn.Conv2d(32, 64, 3, padding=1),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool2d(1)
-        )
-
-        self.target_layer = self.features[6]  # Last Conv2d
-        self.classifier = nn.Linear(64, 1)
+        self.backbone = models.resnet18(weights=None)
+        self.target_layer = self.backbone.layer4[-1]
+        self.backbone.fc = nn.Linear(self.backbone.fc.in_features, 1)
 
     def forward(self, x):
-        x = self.features(x)
-        x = x.view(x.size(0), -1)
-        return self.classifier(x)
-
+        return self.backbone(x)
 
 def load_model():
-    model = SimpleCNN()
+    model = DeepfakeModel()  
+    weights_path = "weights/model.pth"
+
     try:
-        state_dict = torch.load("weights/model.pth", map_location="cpu")
-        model.load_state_dict(state_dict)
-    except Exception as e:
-        print("Warning: Could not load weights:", e)
-        print("Using randomly initialized model.")
-    return model
+        ckpt = torch.load(weights_path, map_location="cpu", weights_only=False)
+    except TypeError:
+        ckpt = torch.load(weights_path, map_location="cpu")
+    except Exception:
+        try:
+            import torch.serialization as ts
+            import numpy as _np
+            ts.add_safe_globals([_np._core.multiarray.scalar])
+            ckpt = torch.load(weights_path, map_location="cpu", weights_only=False)
+        except Exception:
+            ckpt = torch.load(weights_path, map_location="cpu")
+    state_dict = ckpt.get("model_state", ckpt.get("state_dict", ckpt)) if isinstance(ckpt, dict) else ckpt
+    threshold = ckpt.get("threshold", 0.7) if isinstance(ckpt, dict) else 0.7
+
+    if isinstance(state_dict, dict) and not any(k.startswith("backbone.") for k in state_dict.keys()):
+        new_state = {}
+        for k, v in state_dict.items():
+            if k.startswith(("conv1", "bn1", "layer", "fc", "target_layer")):
+                new_state[f"backbone.{k}"] = v
+            else:
+                new_state[k] = v
+        state_dict = new_state
+
+    model.load_state_dict(state_dict, strict=False)
+    return model, threshold
+
+
