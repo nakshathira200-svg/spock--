@@ -10,8 +10,8 @@ from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.utils.image import show_cam_on_image
 
-from backend.video_model import load_model
-from backend.utils import DEVICE
+from video_model import load_model
+from utils import DEVICE
 
 
 model ,THRESHOLD= load_model()
@@ -152,6 +152,6 @@ def analyze_video(video_path):
 
 
 
-@celery.task(name="video_service.task_video_analysis")
+@celery.task
 def task_video_analysis(video_path):
     return analyze_video(video_path)

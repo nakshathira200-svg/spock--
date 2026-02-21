@@ -5,8 +5,8 @@ import numpy as np
 import torch
 import time
 from backend.celery_app import celery
-from backend.audio_model import CRNN
-from backend.audio_model import load_audio_model
+from audio_model import CRNN
+from audio_model import load_audio_model
 
 DEVICE = torch.device("cpu")
 torch.set_num_threads(2)
@@ -123,6 +123,6 @@ def analyze_audio(video_path):
     }
 
 
-@celery.task(name="audio_service.task_audio_analysis")
+@celery.task
 def task_audio_analysis(video_path):
     return analyze_audio(video_path)
