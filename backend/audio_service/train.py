@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from audio_model import CRNN
-from audio_dataset import AudioDataset
+from pathlib import Path
+from backend.audio_service.model import CRNN
+from backend.audio_service.dataset import AudioDataset
 import os
 
 torch.set_num_threads(2)
@@ -15,10 +16,11 @@ optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
 
 
 
-DATASET_ROOT = "audio_dataset"  
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATASET_ROOT = BASE_DIR / "audio_dataset"
 
-REAL_DIR = os.path.join(DATASET_ROOT, "real")
-FAKE_DIR = os.path.join(DATASET_ROOT, "fake")
+REAL_DIR = os.path.join(str(DATASET_ROOT), "real")
+FAKE_DIR = os.path.join(str(DATASET_ROOT), "fake")
 
 real_files = [os.path.join(REAL_DIR, f)
               for f in os.listdir(REAL_DIR)
@@ -96,4 +98,4 @@ print("Chosen threshold:", threshold)
 torch.save({
     "model_state": model.state_dict(),
     "threshold": threshold
-}, "weights/audio_model.pth")
+}, str(BASE_DIR / "weights" / "audio_model.pth"))

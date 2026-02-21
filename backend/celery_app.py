@@ -5,8 +5,8 @@ celery = Celery(
     broker="redis://localhost:6379/0",
     backend="redis://localhost:6379/0",
     include=[
-        "backend.video_service",
-        "backend.audio_service",
+        "backend.video_service.service",
+        "backend.audio_service.service",
         "backend.metadata_service",
     ],
 )

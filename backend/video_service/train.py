@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -12,8 +13,9 @@ BATCH_SIZE = 16
 EPOCHS = 5
 LR = 1e-3
 
-DATA_DIR = "dataset"
-WEIGHTS_PATH = "weights/model.pth"
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = str(BASE_DIR / "video_dataset")
+WEIGHTS_PATH = str(BASE_DIR / "weights" / "model.pth")
 
 
 transform = transforms.Compose([
@@ -110,10 +112,10 @@ print("Best threshold:", best_threshold)
 print("Training accuracy:", best_accuracy)
 
 # Save weights
-os.makedirs("weights", exist_ok=True)
+os.makedirs(str(BASE_DIR / "weights"), exist_ok=True)
 torch.save({
     "model_state": model.state_dict(),
     "threshold": best_threshold
-}, "weights/model.pth")
+}, WEIGHTS_PATH)
 
 print("Model saved.")

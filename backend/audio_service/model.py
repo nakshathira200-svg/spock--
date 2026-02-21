@@ -50,7 +50,7 @@ class CRNN(nn.Module):
 
 def load_audio_model():
     model = CRNN()
-    weights_path = Path(__file__).resolve().parent / "weights" / "audio_model.pth"
+    weights_path = Path(__file__).resolve().parent.parent / "weights" / "audio_model.pth"
 
     checkpoint = torch.load(
         weights_path,

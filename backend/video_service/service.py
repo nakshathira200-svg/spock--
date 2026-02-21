@@ -11,7 +11,7 @@ from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.utils.image import show_cam_on_image
 
-from backend.video_model import load_model
+from backend.video_service.model import load_model
 from backend.utils import DEVICE
 
 
@@ -19,7 +19,7 @@ model ,THRESHOLD= load_model()
 model.to(DEVICE)
 model.eval()
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 TEMP_DIR = BASE_DIR / "temp"
 os.makedirs(TEMP_DIR, exist_ok=True)
 

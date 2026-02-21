@@ -6,12 +6,12 @@ import torch
 import time
 from pathlib import Path
 from backend.celery_app import celery
-from backend.audio_model import load_audio_model
+from backend.audio_service.model import load_audio_model
 
 DEVICE = torch.device("cpu")
 torch.set_num_threads(2)
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 TEMP_DIR = BASE_DIR / "temp_audio"
 os.makedirs(TEMP_DIR, exist_ok=True)
 

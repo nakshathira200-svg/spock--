@@ -20,3 +20,5 @@ Thumbs.db
 *.mp4
 __pycache__/
 *.pth
+dump.rdb
+*.rdb
