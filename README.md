@@ -19,6 +19,4 @@ verifyy/
 └── README.md
 ```
 
-Dataset used:
-FaceForensics++ Dataset (C23)(Kaggle)
 
