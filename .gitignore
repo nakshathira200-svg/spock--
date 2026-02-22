@@ -24,3 +24,4 @@ dump.rdb
 *.rdb
 
 backend/test_full_pipeline.py
+backend/media

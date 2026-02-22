@@ -10,17 +10,16 @@ def compute_final_score(video_result, audio_result, metadata_result):
     m = max(0.0, min(1.0, m))
 
     # Probabilistic OR fusion
-    final_score = 1 - (
-    (1 - v) *
-    (1 - (a * 0.6)) *
-    (1 - m * 0.8)
-)
+    final_score = 0.6 * v + 0.4 * a
 
     # Strong override if recycled
     if metadata_result.get("recycled"):
         final_score = max(final_score, 0.9)
 
-    verdict = "Likely Fake" if final_score > 0.6 else "Likely Real"
+    if final_score > 0.50:
+        verdict = "Likely Fake"
+    else :
+        verdict = "Likely Real"
 
     return {
         "final_score": round(final_score, 3),

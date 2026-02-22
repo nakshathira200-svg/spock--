@@ -57,11 +57,27 @@ def detect_face(image):
     if boxes is None:
         return None
 
+    h, w = image.shape[:2]
     x1, y1, x2, y2 = boxes[0]
-    face = image[int(y1):int(y2), int(x1):int(x2)]
+
+    x1 = max(0, min(w, int(x1)))
+    x2 = max(0, min(w, int(x2)))
+    y1 = max(0, min(h, int(y1)))
+    y2 = max(0, min(h, int(y2)))
+
+    if x2 <= x1 or y2 <= y1:
+        return None
+
+    face = image[y1:y2, x1:x2]
+    if face is None or face.size == 0:
+        return None
+
     return face
 
 def preprocess(face_img):
+    if face_img is None or face_img.size == 0:
+        return None
+
     face_img = cv2.resize(face_img, (224, 224))
     face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
     face_img = face_img.astype(np.float32) / 255.0
@@ -139,6 +155,8 @@ def analyze_video(video_path):
             continue
 
         tensor = preprocess(face)
+        if tensor is None:
+            continue
         score = predict(tensor)
 
         scores.append(score)
@@ -152,14 +170,21 @@ def analyze_video(video_path):
         }
 
     final_score = 0.7 * max(scores) + 0.3 * (sum(scores) / len(scores))
-    margin=0.02
+    margin = 0.02
+    if final_score > THRESHOLD + margin:
+        status = "Likely Fake"
+    elif final_score < THRESHOLD - margin:
+        status = "Likely Real"
+    else:
+        status = "Suspicious"
+
     result = {
         "type": "video",
         "video_score": final_score,
-        "status": "Likely Fake" if final_score > THRESHOLD + margin else ("Likely Real" if final_score < THRESHOLD - margin else "Suspicious")
+        "status": status
     }
 
-    if final_score > 0.8 and last_tensor is not None:
+    if final_score > THRESHOLD+margin and last_tensor is not None:
         heatmap_path = generate_gradcam(last_tensor)
         if heatmap_path:
             result["heatmap"] = heatmap_path
